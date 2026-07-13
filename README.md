@@ -1,6 +1,6 @@
 # os-simulator-projekat
-Studentski projekat iz predmeta Operativni sistemi
-Studenti: Anđela Lalić, Dragana Majstorović
+Studentski projekat iz predmeta Operativni sistemi  
+Studenti: Anđela Lalić, Dragana Majstorović  
 Mentor: doc. dr Aleksandar Kartelj
 
 | Oblast | Varijanta |
