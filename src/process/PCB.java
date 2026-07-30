@@ -15,10 +15,11 @@ public class PCB {
     private int baseAddress;
     private int limit;
     private List<OpenFileHandle> openFiles;
+    private int remainingTime;
 
     public PCB(int pid, ProcessState state, int priority, int programCounter,
                Map<String, Integer> registers, int baseAddress, int limit,
-               List<OpenFileHandle> openFiles) {
+               List<OpenFileHandle> openFiles, int remainingTime) {
         this.pid = pid;
         this.state = state;
         this.priority = priority;
@@ -27,6 +28,7 @@ public class PCB {
         this.baseAddress = baseAddress;
         this.limit = limit;
         this.openFiles = openFiles;
+        this.remainingTime = remainingTime;
     }
 
     public int getPid() {
@@ -93,6 +95,14 @@ public class PCB {
         this.openFiles = openFiles;
     }
 
+    public int getRemainingTime() {
+        return remainingTime;
+    }
+
+    public void setRemainingTime(int remainingTime) {
+        this.remainingTime = remainingTime;
+    }
+
     @Override
     public String toString() {
         return "PCB{" +
@@ -104,6 +114,7 @@ public class PCB {
                 ", baseAddress=" + baseAddress +
                 ", limit=" + limit +
                 ", openFiles=" + openFiles +
+                ", remainingTime=" + remainingTime +
                 '}';
     }
 }

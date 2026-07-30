@@ -1,5 +1,7 @@
 package process;
 
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Queue;
 
 public class ReadyQueue {
@@ -7,20 +9,26 @@ public class ReadyQueue {
     private Queue<PCB> queue;
 
     public ReadyQueue() {
-        // TODO
+        queue = new LinkedList<>();
     }
 
     public void add(PCB p) {
-        // TODO
+        queue.add(p);
     }
 
     public PCB removeNext() {
-        // TODO
-        return null;
+        return queue.poll();
     }
 
     public boolean isEmpty() {
-        // TODO
-        return false;
+        return queue.isEmpty();
+    }
+
+    public List<PCB> snapshot() {
+        return new LinkedList<>(queue);
+    }
+
+    public boolean remove(PCB p) {
+        return queue.remove(p);
     }
 }
