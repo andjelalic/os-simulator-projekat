@@ -1,9 +1,10 @@
 package filesystem;
 
-public class File {
+public class File extends FsNode{
     private StringBuilder content;
 
-    public File(){
+    public File(String name, Directory parent){
+        super(name, parent);
         this.content = new StringBuilder();
     }
 

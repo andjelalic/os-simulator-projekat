@@ -1,6 +1,6 @@
 package io;
 
-public class IODevice {
+public abstract class IODevice {
     protected String name;
 
     public IODevice(String name) {

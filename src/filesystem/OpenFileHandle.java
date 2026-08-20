@@ -1,7 +1,7 @@
 package filesystem;
 
 public class OpenFileHandle {
-    private File file;
+    private final File file;
     private int position;
     private final FileMode mode;
 

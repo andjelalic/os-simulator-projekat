@@ -1,7 +1,7 @@
 package memory;
 
 public class RAM {
-    private int size;
+    private final int size;
     private int[] cells;
 
     public RAM(int size) {
@@ -11,10 +11,6 @@ public class RAM {
 
     public int getSize() {
         return size;
-    }
-
-    public void setSize(int size) {
-        this.size = size;
     }
 
     public int[] getCells() {

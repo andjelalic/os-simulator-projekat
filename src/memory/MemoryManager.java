@@ -2,15 +2,16 @@ package memory;
 
 import process.PCB;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class MemoryManager {
     private RAM ram;
     private List<MemorySegment> segments;
 
-    public MemoryManager(RAM ram, List<MemorySegment> segments) {
+    public MemoryManager(RAM ram) {
         this.ram = ram;
-        this.segments = segments;
+        this.segments = new ArrayList<>();
     }
 
     public RAM getRam() {
@@ -30,6 +31,10 @@ public class MemoryManager {
     }
 
     public boolean allocate(PCB p, int size){
+        int nosegments = (size + MemorySegment.SEGMENT_SIZE - 1) / MemorySegment.SEGMENT_SIZE; // rachuna koliko segmenata treba dati proces
+        for(int i = 0; i < nosegments; i++){
+            new MemorySegment(p, 0);
+        }
         return false;
     }
 }

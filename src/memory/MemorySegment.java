@@ -3,21 +3,19 @@ package memory;
 import process.PCB;
 
 public class MemorySegment {
-    private PCB owner;
-    private int base, limit;
+    public static final int SEGMENT_SIZE = 16;
 
-    public MemorySegment(PCB owner, int base, int limit) {
+    private final PCB owner;
+    private int base;
+    private int limit = SEGMENT_SIZE;
+
+    public MemorySegment(PCB owner, int base) {
         this.owner = owner;
         this.base = base;
-        this.limit = limit;
     }
 
     public PCB getOwner() {
         return owner;
-    }
-
-    public void setOwner(PCB owner) {
-        this.owner = owner;
     }
 
     public int getBase() {
@@ -32,7 +30,4 @@ public class MemorySegment {
         return limit;
     }
 
-    public void setLimit(int limit) {
-        this.limit = limit;
-    }
 }
