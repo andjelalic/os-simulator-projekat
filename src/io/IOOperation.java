@@ -33,6 +33,10 @@ public class IOOperation {
         return data;
     }
 
+    public void setData(String d){
+        data = d;
+    }
+
     public int getDuration(){
         return duration;
     }
