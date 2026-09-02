@@ -1,5 +1,9 @@
 package io;
 
-public class IODevice {
-    // TODO: definisati polja i konstruktor kada bude poznat UML za ovu klasu
+public abstract class IODevice {
+    protected String name;
+
+    public IODevice(String name) {
+        this.name = name;
+    }
 }
