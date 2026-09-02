@@ -8,7 +8,7 @@ public class DiskDevice extends IODevice{
     }
 
     @Override
-    public void startOperation(IOOperation op, PCB p) {
+    public void startOperation(IORequest request) {
         super.busy = true;
 
     }

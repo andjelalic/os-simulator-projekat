@@ -34,4 +34,8 @@ public class Directory extends FsNode{
     public List<FsNode> list(){
         return new ArrayList<>(children.values());
     }
+
+    public String getPath(){
+        return this.parent.getPath() + "/" + name;
+    }
 }

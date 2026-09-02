@@ -32,11 +32,12 @@ public class IOManager {
         if(device == null)
             throw new IllegalArgumentException("Device '" + deviceName + "' does not exist.");
 
-        if(!device.isBusy()){
-            device.startOperation(op, p);
-        }else{
-            // TODO: uhhh kao treba da čeka da se oslobodi, ne znam još kako to funkcioniše
+        IORequest request = new IORequest(p,op, device);
 
+        if(!device.isBusy()){
+            device.startOperation(request);
+        }else{
+            device.queue.add(request);
         }
     }
 
