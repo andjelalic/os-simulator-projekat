@@ -2,6 +2,7 @@ package process;
 
 import io.IODevice;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class BlockedQueue {
@@ -9,19 +10,27 @@ public class BlockedQueue {
     private List<PCB> list;
 
     public BlockedQueue() {
-        // TODO
+        list = new ArrayList<>();
     }
 
     public void block(PCB p) {
-        // TODO
+        p.setState(ProcessState.WAITING);
+        list.add(p);
     }
 
     public void unblock(PCB p) {
-        // TODO
+        // samo mijenja state procesa, ne dodaje ga nazad u ReadyQueue
+        // to je odgovornost kernela kasnije
+        list.remove(p);
+        p.setState(ProcessState.READY);
     }
 
     public PCB findByDevice(IODevice d) {
-        // TODO
+        for (PCB p : list) {
+            if (p.getWaitingDevice() == d) {
+                return p;
+            }
+        }
         return null;
     }
 }

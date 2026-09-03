@@ -1,6 +1,7 @@
 package process;
 
 import filesystem.OpenFileHandle;
+import io.IODevice;
 
 import java.util.List;
 import java.util.Map;
@@ -16,6 +17,7 @@ public class PCB {
     private int limit;
     private List<OpenFileHandle> openFiles;
     private int remainingTime;
+    private IODevice waitingDevice;
 
     public PCB(int pid, ProcessState state, int priority, int programCounter,
                Map<String, Integer> registers, int baseAddress, int limit,
@@ -103,6 +105,14 @@ public class PCB {
         this.remainingTime = remainingTime;
     }
 
+    public IODevice getWaitingDevice() {
+        return waitingDevice;
+    }
+
+    public void setWaitingDevice(IODevice waitingDevice) {
+        this.waitingDevice = waitingDevice;
+    }
+
     @Override
     public String toString() {
         return "PCB{" +
@@ -115,6 +125,7 @@ public class PCB {
                 ", limit=" + limit +
                 ", openFiles=" + openFiles +
                 ", remainingTime=" + remainingTime +
+                ", waitingDevice=" + waitingDevice +
                 '}';
     }
 }
