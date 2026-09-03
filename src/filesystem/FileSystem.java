@@ -2,6 +2,8 @@ package filesystem;
 
 import io.DiskDevice;
 
+import java.util.ArrayList;
+
 public class FileSystem {
     private Directory root;
     private DiskDevice disk;
@@ -114,6 +116,32 @@ public class FileSystem {
             parent = (Directory) node;
         }
         return parent;
+    }
+
+    public void delete(String path) {
+        FsNode node = resolve(path);
+
+        if (node == root) {
+            throw new IllegalArgumentException("Cannot delete root");
+        }
+
+        deleteRecursively(node);
+
+        node.getParent().removeChild(node);
+    }
+
+    private void deleteRecursively(FsNode node) {
+        if (node instanceof File) {
+            // ovde treba da se oslobodi prostor na disku, što još nisam implementirala
+            return;
+        }
+
+        Directory directory = (Directory) node;
+
+        for (FsNode child : new ArrayList<>(directory.list())) {
+            deleteRecursively(child);
+            directory.removeChild(child);
+        }
     }
 
     public Directory getRoot() {
