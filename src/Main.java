@@ -1,3 +1,4 @@
+import process.CPU;
 import process.PCB;
 import process.ProcessState;
 import process.ReadyQueue;
@@ -32,5 +33,24 @@ public class Main {
         System.out.println(testPassed
                 ? "Test PROŠAO: izabran je proces sa najmanjim remainingTime."
                 : "Test NIJE PROŠAO: nije izabran proces sa najmanjim remainingTime.");
+
+        // demo test za cpu (quantum, executeOneStep, contextSwitch)
+        System.out.println();
+        System.out.println("Demo test za CPU");
+
+        CPU cpu = new CPU(3);
+        PCB p4 = new PCB(4, ProcessState.READY, 0, 0,
+                new HashMap<>(), 0, 0, new ArrayList<>(), 5);
+
+        cpu.contextSwitch(p4);
+
+        for (int i = 1; i <= 4; i++) {
+            cpu.executeOneStep();
+            System.out.println("Korak " + i +
+                    ": cycleCount=" + i +
+                    ", remainingTime=" + p4.getRemainingTime() +
+                    ", state=" + p4.getState() +
+                    ", quantumExpired=" + cpu.isQuantumExpired());
+        }
     }
 }
