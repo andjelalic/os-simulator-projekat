@@ -3,6 +3,8 @@ package process;
 import filesystem.OpenFileHandle;
 import io.IODevice;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -18,6 +20,7 @@ public class PCB {
     private List<OpenFileHandle> openFiles;
     private int remainingTime;
     private IODevice waitingDevice;
+    private boolean isSystemProcess;
 
     public PCB(int pid, ProcessState state, int priority, int programCounter,
                Map<String, Integer> registers, int baseAddress, int limit,
@@ -31,6 +34,17 @@ public class PCB {
         this.limit = limit;
         this.openFiles = openFiles;
         this.remainingTime = remainingTime;
+        this.isSystemProcess = false;
+    }
+
+    // static factory metoda za kreiranje sistemskih procesa, npr. procesi jezgra osa
+    // sistemski proces se pravi sa praznim pcetnim stanjem (new, prioritet 0, prgramCounter 0,
+    // prazni registri, bez memorije, bez otvorenih fajlova) i zadatim trajanjem ivzrsavanja
+    public static PCB createSystemProcess(int pid, int duration) {
+        PCB pcb = new PCB(pid, ProcessState.NEW, 0, 0,
+                new HashMap<>(), 0, 0, new ArrayList<>(), duration);
+        pcb.setSystemProcess(true);
+        return pcb;
     }
 
     public int getPid() {
@@ -113,6 +127,14 @@ public class PCB {
         this.waitingDevice = waitingDevice;
     }
 
+    public boolean isSystemProcess() {
+        return isSystemProcess;
+    }
+
+    public void setSystemProcess(boolean systemProcess) {
+        isSystemProcess = systemProcess;
+    }
+
     @Override
     public String toString() {
         return "PCB{" +
@@ -126,6 +148,7 @@ public class PCB {
                 ", openFiles=" + openFiles +
                 ", remainingTime=" + remainingTime +
                 ", waitingDevice=" + waitingDevice +
+                ", isSystemProcess=" + isSystemProcess +
                 '}';
     }
 }

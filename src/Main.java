@@ -3,9 +3,12 @@ import process.PCB;
 import process.ProcessState;
 import process.ReadyQueue;
 import process.SRTScheduler;
+import process.SchedulerDemo;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 
 public class Main {
     public static void main(String[] args) {
@@ -34,23 +37,19 @@ public class Main {
                 ? "Test PROŠAO: izabran je proces sa najmanjim remainingTime."
                 : "Test NIJE PROŠAO: nije izabran proces sa najmanjim remainingTime.");
 
-        // demo test za cpu (quantum, executeOneStep, contextSwitch)
+        // demo test za SchedulerDemo (integracija CPU + SRTScheduler + ReadyQueue)
         System.out.println();
-        System.out.println("Demo test za CPU");
+        System.out.println("Demo test za SchedulerDemo (kvant = 3)");
 
-        CPU cpu = new CPU(3);
-        PCB p4 = new PCB(4, ProcessState.READY, 0, 0,
-                new HashMap<>(), 0, 0, new ArrayList<>(), 5);
+        PCB user1 = new PCB(1, ProcessState.READY, 0, 0,
+                new HashMap<>(), 0, 0, new ArrayList<>(), 6);
+        PCB user2 = new PCB(2, ProcessState.READY, 0, 0,
+                new HashMap<>(), 0, 0, new ArrayList<>(), 4);
+        PCB system1 = PCB.createSystemProcess(100, 2);
+        PCB system2 = PCB.createSystemProcess(101, 3);
 
-        cpu.contextSwitch(p4);
+        List<PCB> allProcesses = Arrays.asList(user1, user2, system1, system2);
 
-        for (int i = 1; i <= 4; i++) {
-            cpu.executeOneStep();
-            System.out.println("Korak " + i +
-                    ": cycleCount=" + i +
-                    ", remainingTime=" + p4.getRemainingTime() +
-                    ", state=" + p4.getState() +
-                    ", quantumExpired=" + cpu.isQuantumExpired());
-        }
+        SchedulerDemo.runSimulation(allProcesses, 3);
     }
 }
