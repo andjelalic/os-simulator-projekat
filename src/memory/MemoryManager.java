@@ -46,4 +46,8 @@ public class MemoryManager {
         //TODO
         return 0;
     }
+
+    public void free(PCB p){
+        //TODO
+    }
 }
