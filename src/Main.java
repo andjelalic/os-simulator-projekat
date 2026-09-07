@@ -1,3 +1,5 @@
+import assembler.Assembler;
+import assembler.Instruction;
 import process.CPU;
 import process.PCB;
 import process.ProcessState;
@@ -51,5 +53,27 @@ public class Main {
         List<PCB> allProcesses = Arrays.asList(user1, user2, system1, system2);
 
         SchedulerDemo.runSimulation(allProcesses, 3);
+
+        // demo test za Assembler
+        System.out.println();
+        System.out.println("Demo test za Assembler");
+
+        String program = "LOAD 5\nADD 3\nSUB 1\nPRINT\nHALT";
+        List<Instruction> parsedInstructions = Assembler.parse(program);
+
+        for (Instruction instruction : parsedInstructions) {
+            System.out.println(instruction);
+        }
+
+        // test da parsiranje baca grešku na nevalidnom kodu (operand koji nije broj)
+        System.out.println();
+        System.out.println("Test parsiranja nevalidnog koda ('LOAD abc')");
+
+        try {
+            Assembler.parse("LOAD abc");
+            System.out.println("Test NIJE PROŠAO: očekivana je greška, a nije bačena.");
+        } catch (IllegalArgumentException e) {
+            System.out.println("Test PROŠAO, uhvaćena očekivana greška: " + e.getMessage());
+        }
     }
 }
