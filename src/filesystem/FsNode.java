@@ -8,4 +8,14 @@ public abstract class FsNode {
         this.name = name;
         this.parent = parent;
     }
+
+    public String getName() {
+        return name;
+    }
+
+    public Directory getParent() {
+        return parent;
+    }
+
+    public abstract String getPath();
 }

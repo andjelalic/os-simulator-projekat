@@ -25,6 +25,10 @@ public class Directory extends FsNode{
         }
     }
 
+    public void removeChild(FsNode node) {
+        children.remove(node.getName());
+    }
+
     public FsNode getChild(String name){
         if(children.containsKey(name))
             return children.get(name);
@@ -32,7 +36,10 @@ public class Directory extends FsNode{
     }
 
     public List<FsNode> list(){
-        // ????? biće nešto
-        return null;
+        return new ArrayList<>(children.values());
+    }
+
+    public String getPath(){
+        return this.parent.getPath() + "/" + name;
     }
 }
