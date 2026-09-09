@@ -14,7 +14,7 @@ import java.util.List;
 
 public class Main {
     public static void main(String[] args) {
-        // Demo test za SRTScheduler
+        // test za SRTScheduler
 
         PCB p1 = new PCB(1, ProcessState.READY, 0, 0,
                 new HashMap<>(), 0, 0, new ArrayList<>(), 10);
@@ -65,7 +65,7 @@ public class Main {
             System.out.println(instruction);
         }
 
-        // test da parsiranje baca grešku na nevalidnom kodu (operand koji nije broj)
+        // test da parsiranje baca gresku na nevalidnom kodu, operand koji nije broj
         System.out.println();
         System.out.println("Test parsiranja nevalidnog koda ('LOAD abc')");
 
@@ -75,5 +75,35 @@ public class Main {
         } catch (IllegalArgumentException e) {
             System.out.println("Test PROŠAO, uhvaćena očekivana greška: " + e.getMessage());
         }
+
+        // demo test za round trip (parse -> toBinary -> fromBinary)
+        System.out.println();
+        System.out.println("Demo test za round-trip (toBinary/fromBinary)");
+
+        int[] binary = Assembler.toBinary(parsedInstructions);
+        System.out.println("Binarni zapis: " + Arrays.toString(binary));
+
+        List<Instruction> recompressedInstructions = Assembler.fromBinary(binary);
+        System.out.println("Vraćene instrukcije:");
+        for (Instruction instruction : recompressedInstructions) {
+            System.out.println(instruction);
+        }
+
+        boolean roundTripPassed = parsedInstructions.size() == recompressedInstructions.size();
+        if (roundTripPassed) {
+            for (int i = 0; i < parsedInstructions.size(); i++) {
+                Instruction original = parsedInstructions.get(i);
+                Instruction recompressed = recompressedInstructions.get(i);
+                if (original.getOpcode() != recompressed.getOpcode()
+                        || original.getOperand() != recompressed.getOperand()) {
+                    roundTripPassed = false;
+                    break;
+                }
+            }
+        }
+
+        System.out.println(roundTripPassed
+                ? "Test prosao"
+                : "Test nije prosao");
     }
 }
