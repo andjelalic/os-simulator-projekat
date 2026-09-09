@@ -19,4 +19,9 @@ public class File extends FsNode{
     public void append(String data) {
         content.append(data);
     }
+
+    @Override
+    public String getPath() {
+        return this.parent.getPath() + "/" + name;
+    }
 }

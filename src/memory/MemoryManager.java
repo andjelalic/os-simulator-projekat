@@ -37,4 +37,17 @@ public class MemoryManager {
         }
         return false;
     }
+
+    public void write(PCB p, int address, int value){
+    // TODO
+    }
+
+    public int read(PCB p, int address){
+        //TODO
+        return 0;
+    }
+
+    public void free(PCB p){
+        //TODO
+    }
 }
