@@ -57,4 +57,36 @@ public class Assembler {
 
         return instructions;
     }
+
+    // pretvara listu instrukcija u niz brojeva, za svaku instrukciju upisuje
+    // opcode.getCode() pa operand, jedno za drugim
+    public static int[] toBinary(List<Instruction> instructions) {
+        int[] binary = new int[instructions.size() * 2];
+
+        for (int i = 0; i < instructions.size(); i++) {
+            Instruction instruction = instructions.get(i);
+            binary[i * 2] = instruction.getOpcode().getCode();
+            binary[i * 2 + 1] = instruction.getOperand();
+        }
+
+        return binary;
+    }
+
+    // obrnuto od toBinary, cita niz po dva broja (opcode, operand) i pravi
+    // listu instrukcija
+    public static List<Instruction> fromBinary(int[] binary) {
+        if (binary.length % 2 != 0) {
+            throw new IllegalArgumentException(
+                    "Neispravan binarni zapis: dužina niza (" + binary.length + ") nije parna");
+        }
+
+        List<Instruction> instructions = new ArrayList<>();
+        for (int i = 0; i < binary.length; i += 2) {
+            OpCode opcode = OpCode.fromCode(binary[i]);
+            int operand = binary[i + 1];
+            instructions.add(new Instruction(opcode, operand));
+        }
+
+        return instructions;
+    }
 }
