@@ -105,5 +105,27 @@ public class Main {
         System.out.println(roundTripPassed
                 ? "Test prosao"
                 : "Test nije prosao");
+
+        // demo test za integraciju asembelra i cpua, korisnicki proces izvrsava
+        // asemblirani program preko CPU.executeOneStep()
+        System.out.println();
+        System.out.println("Demo test za integraciju Assembler + CPU");
+
+        PCB userProcess = new PCB(5, ProcessState.READY, 0, 0,
+                new HashMap<>(), 0, 0, new ArrayList<>(), 0);
+
+        String userProgram = "LOAD 10\nADD 5\nSTORE 0\nSUB 3\nPRINT\nHALT";
+        List<Instruction> userInstructions = Assembler.parse(userProgram);
+        userProcess.loadProgram(userInstructions);
+
+        CPU cpu = new CPU(10);
+        cpu.contextSwitch(userProcess);
+
+        while (!cpu.isIdle()) {
+            cpu.executeOneStep();
+        }
+
+        System.out.println("Vrijednost u lokalnoj memoriji na adresi 0: "
+                + userProcess.loadFromLocalMemory(0));
     }
 }

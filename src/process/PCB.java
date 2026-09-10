@@ -1,5 +1,6 @@
 package process;
 
+import assembler.Instruction;
 import filesystem.OpenFileHandle;
 import io.IODevice;
 
@@ -21,6 +22,15 @@ public class PCB {
     private int remainingTime;
     private IODevice waitingDevice;
     private boolean isSystemProcess;
+
+    // asemblirani program koji proces izvrsava na CPU-u; null za procese koji
+    // nemaju ucitan program (npr. sistemski procesi ili stariji testovi)
+    private List<Instruction> program;
+
+    // privremena "memorija" procesa - dok se ne poveze pravi MemoryManager
+    // u kasnijoj integraciji, STORE/LOAD instrukcije citaju i pisu ovdje;
+    // kapacitet od 16 adresa je proizvoljan, samo za potrebe demonstracije
+    private int[] localMemory = new int[16];
 
     public PCB(int pid, ProcessState state, int priority, int programCounter,
                Map<String, Integer> registers, int baseAddress, int limit,
@@ -133,6 +143,34 @@ public class PCB {
 
     public void setSystemProcess(boolean systemProcess) {
         isSystemProcess = systemProcess;
+    }
+
+    public List<Instruction> getProgram() {
+        return program;
+    }
+
+    // ucitava asemblirani program u proces: postavlja program, vraca programCounter
+    // na pocetak i postavlja remainingTime na broj instrukcija koje treba izvrsiti
+    public void loadProgram(List<Instruction> program) {
+        this.program = program;
+        this.programCounter = 0;
+        this.remainingTime = program.size();
+    }
+
+    public void storeToLocalMemory(int address, int value) {
+        if (address < 0 || address >= 16) {
+            throw new IndexOutOfBoundsException(
+                    "Adresa " + address + " van granica lokalne memorije procesa pid=" + pid);
+        }
+        localMemory[address] = value;
+    }
+
+    public int loadFromLocalMemory(int address) {
+        if (address < 0 || address >= 16) {
+            throw new IndexOutOfBoundsException(
+                    "Adresa " + address + " van granica lokalne memorije procesa pid=" + pid);
+        }
+        return localMemory[address];
     }
 
     @Override
