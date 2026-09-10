@@ -1,5 +1,7 @@
 import assembler.Assembler;
 import assembler.Instruction;
+import cli.CommandInterpreter;
+import process.BlockedQueue;
 import process.CPU;
 import process.PCB;
 import process.ProcessState;
@@ -127,5 +129,23 @@ public class Main {
 
         System.out.println("Vrijednost u lokalnoj memoriji na adresi 0: "
                 + userProcess.loadFromLocalMemory(0));
+
+        // demo test za CommandInterpreter (cli paket)
+        System.out.println();
+        System.out.println("Demo test za CommandInterpreter");
+
+        ReadyQueue cliReadyQueue = new ReadyQueue();
+        CPU cliCpu = new CPU(5);
+        BlockedQueue cliBlockedQueue = new BlockedQueue();
+        CommandInterpreter interpreter = new CommandInterpreter(cliReadyQueue, cliCpu, cliBlockedQueue);
+
+        System.out.println(interpreter.execute("create test1"));
+        System.out.println(interpreter.execute("write test1 LOAD 7\nADD 3\nPRINT\nHALT"));
+        System.out.println(interpreter.execute("run test1"));
+        System.out.println(interpreter.execute("ps"));
+        System.out.println(interpreter.execute("block 1"));
+        System.out.println(interpreter.execute("ps"));
+        System.out.println(interpreter.execute("unblock 1"));
+        System.out.println(interpreter.execute("ps"));
     }
 }
