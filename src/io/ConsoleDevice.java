@@ -8,8 +8,7 @@ public class ConsoleDevice extends IODevice{
     }
 
     @Override
-    public void startOperation(IORequest request) {
-        this.busy = true;
-
+    public IORequest getNextRequest() {
+        return requests.getFirst();
     }
 }
