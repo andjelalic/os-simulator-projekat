@@ -1,6 +1,7 @@
 package io;
 
 import process.PCB;
+import process.ProcessState;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,15 +34,31 @@ public class IOManager {
             throw new IllegalArgumentException("Device '" + deviceName + "' does not exist.");
 
         IORequest request = new IORequest(p,op, device);
+        p.setState(ProcessState.WAITING);
 
         if(!device.isBusy()){
             device.startOperation(request);
         }else{
-            device.queue.add(request);
+            device.addRequest(request);
         }
     }
 
     public void completeIO(IODevice device){
+        IORequest completed = device.getCurrentRequest();
 
+        if (completed == null)
+            return;
+
+        PCB process = completed.getProcess();
+        process.setWaitingDevice(null);
+        process.setState(ProcessState.READY);
+
+        IORequest next = device.getNextRequest();
+
+        if (next != null) {
+            device.startOperation(next);
+        } else {
+            device.finishOperation();
+        }
     }
 }
