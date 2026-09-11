@@ -204,5 +204,93 @@ public class Main {
 
         memoryManager.free(memProcess);
         System.out.println("Memorija procesa pid=" + memProcess.getPid() + " je oslobođena.");
+
+        // kompletan test Scenarija 1 potpuno nezavisan setp
+        System.out.println();
+        runScenario1();
+    }
+
+    // test Scenarija 1  boot sistemskih procesa, kreiranje
+    // i pisanje fajla preko CommandInterpreter-a, pokretanje procesa preko
+    // OSKernel.start() i provjera liste procesa na kraju
+    //skroz nezavisan setup od ostatka Mejna, sopstveni RAM, FileSystem,
+    // OSKernel itdyyy
+    private static void runScenario1() {
+        System.out.println("=========================================");
+        System.out.println("SCENARIO 1");
+        System.out.println("=========================================");
+
+        RAM ram = new RAM(128);
+        MemoryManager memoryManager = new MemoryManager(ram);
+        Directory root = new Directory("", null);
+        DiskDevice disk = new DiskDevice("disk0", 128);
+        FileSystem fileSystem = new FileSystem(root, disk);
+        ReadyQueue readyQueue = new ReadyQueue();
+        BlockedQueue blockedQueue = new BlockedQueue();
+        CPU cpu = new CPU(5);
+        SRTScheduler scheduler = new SRTScheduler();
+        IOManager ioManager = new IOManager();
+
+        OSKernel kernel = new OSKernel(readyQueue, blockedQueue, cpu,
+                scheduler, memoryManager, fileSystem, ioManager);
+        CommandInterpreter interpreter = new CommandInterpreter(kernel);
+
+        // boot: sistemski procesi (900, 901) se ucitavaju prije bilo cega
+        // drugog, kao osnovni servisi sistema
+        System.out.println("=== Boot: ucitavanje sistemskih procesa ===");
+        kernel.bootSystemProcesses();
+        System.out.println(kernel.listProcesses());
+
+        // pokrecemo pozadinsku nit koja od sada sama, u paraleli, izvrsava
+        // sistemske i buduce korisnicke procese
+        kernel.start();
+
+
+        System.out.println();
+        System.out.println("=== Korak 1: Prikazati sadrzaj datoteke (prije nego sto postoji) ===");
+        System.out.println(interpreter.execute("cat /program1.asm"));
+
+
+        System.out.println();
+        System.out.println("=== Korak 2-3: Kreirati novu datoteku, uci u nju ===");
+        System.out.println(interpreter.execute("create /program1.asm"));
+
+
+        System.out.println();
+        System.out.println("=== Korak 4: Kreirati fajl (napomena: isto kao korak 2, ne radi se ponovo) ===");
+
+        //otvaranje fajla za pisanje  to
+        // je write, koji direktno upisuje sadrzaj
+        System.out.println();
+        System.out.println("=== Korak 5: Otvoriti fajl za pisanje ===");
+        System.out.println(interpreter.execute("write /program1.asm LOAD 8\nADD 4\nSTORE 0\nPRINT\nHALT"));
+
+        // cat pokazuje da je sadrzaj sad tekstualni asemblerski kod
+        // prevod u binarni zapis se desava kasnije, kad run pozove
+        // kernel.createProcess -> Assembler.parse -> pcb.loadProgram
+        System.out.println();
+        System.out.println("=== Korak 6: Upisati asemblerski kod (bice preveden u binarni zapis prije izvrsavanja) ===");
+        System.out.println(interpreter.execute("cat /program1.asm"));
+
+        // run asemblira kod i pravi novi proces, koji zatim
+        // pozadinska nit (kernel.start()) izvrsava paralelno, bez cekanja
+        System.out.println();
+        System.out.println("=== Korak 7: Pokrenuti proces ===");
+        System.out.println(interpreter.execute("run /program1.asm"));
+
+
+        try {
+            Thread.sleep(600);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+
+        //ps sad treba da pokaze i sistemske procese (900, 901) i
+        // korisnicki proces, tu ocekujemo terminated
+        System.out.println();
+        System.out.println("=== Korak 8: Prikazati listu procesa (ukljucujuci sistemske) ===");
+        System.out.println(interpreter.execute("ps"));
+
+        kernel.stop();
     }
 }

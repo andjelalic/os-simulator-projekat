@@ -36,6 +36,10 @@ public class CommandInterpreter {
                 return block(arguments);
             case "unblock":
                 return unblock(arguments);
+            case "cat":
+                return cat(arguments);
+            case "mkdir":
+                return mkdir(arguments);
             default:
                 return "Nepoznata komanda: " + commandName;
         }
@@ -113,6 +117,38 @@ public class CommandInterpreter {
             return "Greska: neispravan pid '" + arguments.trim() + "'";
         }
         return kernel.unblockProcess(pid);
+    }
+
+    // cat <path>, otvara fajl u READ modu i vraca njegov sadrzaj direktno (kao
+    // prikaz sadrzaja u terminalu), greska ako fajl ne postoji; posebna poruka
+    // ako je fajl prazan
+    private String cat(String path) {
+        path = path.trim();
+
+        OpenFileHandle handle;
+        try {
+            handle = kernel.getFileSystem().open(path, FileMode.READ);
+        } catch (IllegalArgumentException e) {
+            return "Greska: " + e.getMessage();
+        }
+
+        String content = handle.getFile().read();
+        if (content.isEmpty()) {
+            return "Fajl je prazan";
+        }
+        return content;
+    }
+
+    // mkdir <path> pravi novi direktorijum preko FileSystem-a, greska ako vec
+    // postoji ili roditeljski direktorijum ne postoji
+    private String mkdir(String path) {
+        path = path.trim();
+        try {
+            kernel.getFileSystem().createDirectory(path);
+        } catch (IllegalArgumentException e) {
+            return "Greska: " + e.getMessage();
+        }
+        return "Direktorijum '" + path + "' uspjesno kreiran";
     }
 
     private Integer parsePid(String arguments) {
