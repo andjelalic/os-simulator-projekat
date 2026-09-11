@@ -1,39 +1,19 @@
 package cli;
 
-import assembler.Assembler;
-import assembler.Instruction;
-import process.BlockedQueue;
-import process.CPU;
-import process.PCB;
-import process.ProcessState;
-import process.ReadyQueue;
+import filesystem.File;
+import filesystem.FileMode;
+import filesystem.OpenFileHandle;
+import kernel.OSKernel;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-// minimalni komandni interpreter: prima linije komandi kao stringove i njima
-// upravlja fajlovima (privremena zamjena za pravi FileSystem), procesima i
-// njihovim stanjem (ready/blocked)
+// minimalni komandni interpreter: prima linije komandi kao stringove i preko
+// OSKernela upravlja fajl sistemom i procesima kreiranje, izvrsavanje, ps,
+// block unblock,, sam interpreter ne cuva nikakvo stanje osim referenci na kernel
 public class CommandInterpreter {
 
-    // privremena zamjena za pravi FileSystem: ime fajla -> sadrzaj (asemblerski kod)
-    private Map<String, String> files;
-    private ReadyQueue readyQueue;
-    private CPU cpu;
-    private int nextPid;
-    // svi ikad kreirani procesi, cuvaju se ovdje radi komande ps
-    private List<PCB> allProcesses;
-    private BlockedQueue blockedQueue;
+    private OSKernel kernel;
 
-    public CommandInterpreter(ReadyQueue readyQueue, CPU cpu, BlockedQueue blockedQueue) {
-        this.readyQueue = readyQueue;
-        this.cpu = cpu;
-        this.blockedQueue = blockedQueue;
-        this.files = new HashMap<>();
-        this.allProcesses = new ArrayList<>();
-        this.nextPid = 1;
+    public CommandInterpreter(OSKernel kernel) {
+        this.kernel = kernel;
     }
 
     // parsira liniju komande: prvi dio je ime komande, ostatak (ako postoji)
@@ -61,115 +41,78 @@ public class CommandInterpreter {
         }
     }
 
-    // create <ime> pravi prazan fajl, greska ako fajl sa tim imenom vec postoji
-    private String create(String name) {
-        name = name.trim();
-        if (files.containsKey(name)) {
-            return "Greska: fajl '" + name + "' vec postoji";
+    // create <path> pravi prazan fajl preko FileSystem-a, greska ako fajl vec
+    // postoji ili roditeljski direktorijum ne postoji
+    private String create(String path) {
+        path = path.trim();
+        try {
+            kernel.getFileSystem().createFile(path);
+        } catch (IllegalArgumentException e) {
+            return "Greska: " + e.getMessage();
         }
-        files.put(name, "");
-        return "Fajl '" + name + "' uspjesno kreiran";
+        return "Fajl '" + path + "' uspjesno kreiran";
     }
 
-    // write <ime> <kod>, upisuje ostatak reda kao sadrzaj fajla , kreska ako
-    // fajl ne postoji mora se prvo createovat
+    // write <path> <kod>, otvara fajl u WRITE modu i upisuje ostatak reda kao
+    // njegov sadrzaj, greska ako fajl ne postoji
     private String write(String arguments) {
         String[] parts = arguments.split(" ", 2);
-        String name = parts[0];
+        String path = parts[0];
         String code = parts.length > 1 ? parts[1] : "";
 
-        if (!files.containsKey(name)) {
-            return "Greska: fajl '" + name + "' ne postoji";
-        }
-        files.put(name, code);
-        return "Kod uspjesno upisan u fajl '" + name + "'";
-    }
-
-    // run <ime>,  asemblira sadrzaj fajla i pravi novi proces koji ga izvrsava,
-    // greska ako fajl ne postoji ili je prazan
-    private String run(String name) {
-        name = name.trim();
-        if (!files.containsKey(name) || files.get(name).isEmpty()) {
-            return "Greska: fajl '" + name + "' ne postoji ili je prazan";
-        }
-
-        List<Instruction> instructions;
+        OpenFileHandle handle;
         try {
-            instructions = Assembler.parse(files.get(name));
+            handle = kernel.getFileSystem().open(path, FileMode.WRITE);
         } catch (IllegalArgumentException e) {
-            return "Greska pri asembliranju fajla '" + name + "': " + e.getMessage();
+            return "Greska: " + e.getMessage();
         }
 
-        PCB pcb = new PCB(nextPid++, ProcessState.NEW, 0, 0,
-                new HashMap<>(), 0, 0, new ArrayList<>(), 0);
-        pcb.loadProgram(instructions);
-        pcb.setState(ProcessState.READY);
-
-        readyQueue.add(pcb);
-        allProcesses.add(pcb);
-
-        return "Proces pokrenut iz fajla '" + name + "', pid=" + pcb.getPid();
+        handle.getFile().write(code);
+        return "Kod uspjesno upisan u fajl '" + path + "'";
     }
 
-    // ps: ispisuje pregled svih ikad kreiranih procesa, po jedan red za svaki
+    // run <path>, otvara fajl u READ modu, cita njegov sadrzaj i preko kernela
+    // pravi novi proces koji ga izvrsava, greska ako fajl ne postoji ili je prazan
+    private String run(String path) {
+        path = path.trim();
+
+        OpenFileHandle handle;
+        try {
+            handle = kernel.getFileSystem().open(path, FileMode.READ);
+        } catch (IllegalArgumentException e) {
+            return "Greska: " + e.getMessage();
+        }
+
+        File file = handle.getFile();
+        String code = file.read();
+        if (code.isEmpty()) {
+            return "Greska: fajl '" + path + "' je prazan";
+        }
+
+        return kernel.createProcess(code, 16);
+    }
+
+    // ps: ispisuje pregled svih ikad kreiranih procesa preko kernela
     private String ps() {
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < allProcesses.size(); i++) {
-            PCB p = allProcesses.get(i);
-            sb.append("pid=").append(p.getPid())
-                    .append(", state=").append(p.getState())
-                    .append(", remainingTime=").append(p.getRemainingTime())
-                    .append(", isSystemProcess=").append(p.isSystemProcess());
-            if (i < allProcesses.size() - 1) {
-                sb.append("\n");
-            }
-        }
-        return sb.toString();
+        return kernel.listProcesses();
     }
 
-    // block <pid>: prebacuje proces u blockedQueue (stanje WAITING).
-    // Greska ako proces sa tim pid-om ne postoji
+    // block <pid>: prebacuje proces preko kernela u blokirano stanje
     private String block(String arguments) {
         Integer pid = parsePid(arguments);
         if (pid == null) {
             return "Greska: neispravan pid '" + arguments.trim() + "'";
         }
-
-        PCB pcb = findByPid(pid);
-        if (pcb == null) {
-            return "Greska: proces sa pid=" + pid + " ne postoji";
-        }
-
-        blockedQueue.block(pcb);
-        return "Proces pid=" + pid + " blokiran";
+        return kernel.blockProcess(pid);
     }
 
-    // unblock <pid>, vraca proces iz blockedQueue nazad u READY stanje i,
-    // za razliku od BlockedQueue.unblock koja to namjerno ne radi, ovdje
-    // ga i vraca u readyQueue da bi mogao ponovo biti izabran za izvrsavanje
+    // unblock <pid>: vraca proces preko kernela iz blokiranog nazad u ready stanje
     private String unblock(String arguments) {
         Integer pid = parsePid(arguments);
         if (pid == null) {
             return "Greska: neispravan pid '" + arguments.trim() + "'";
         }
-
-        PCB pcb = findByPid(pid);
-        if (pcb == null || pcb.getState() != ProcessState.WAITING) {
-            return "Greska: proces sa pid=" + pid + " nije blokiran";
-        }
-
-        blockedQueue.unblock(pcb);
-        readyQueue.add(pcb);
-        return "Proces pid=" + pid + " deblokiran";
-    }
-
-    private PCB findByPid(int pid) {
-        for (PCB p : allProcesses) {
-            if (p.getPid() == pid) {
-                return p;
-            }
-        }
-        return null;
+        return kernel.unblockProcess(pid);
     }
 
     private Integer parsePid(String arguments) {

@@ -1,6 +1,13 @@
 import assembler.Assembler;
 import assembler.Instruction;
 import cli.CommandInterpreter;
+import filesystem.Directory;
+import filesystem.FileSystem;
+import io.DiskDevice;
+import io.IOManager;
+import kernel.OSKernel;
+import memory.MemoryManager;
+import memory.RAM;
 import process.BlockedQueue;
 import process.CPU;
 import process.PCB;
@@ -130,22 +137,72 @@ public class Main {
         System.out.println("Vrijednost u lokalnoj memoriji na adresi 0: "
                 + userProcess.loadFromLocalMemory(0));
 
-        // demo test za CommandInterpreter (cli paket)
+        // demo test za CommandInterpreter (cli paket), sada preko OSKernel-a
         System.out.println();
-        System.out.println("Demo test za CommandInterpreter");
+        System.out.println("Demo test za CommandInterpreter (preko OSKernel-a)");
 
+        RAM cliRam = new RAM(128);
+        MemoryManager cliMemoryManager = new MemoryManager(cliRam);
+        Directory cliRoot = new Directory("", null);
+        DiskDevice cliDisk = new DiskDevice("disk0", 128);
+        FileSystem cliFileSystem = new FileSystem(cliRoot, cliDisk);
         ReadyQueue cliReadyQueue = new ReadyQueue();
-        CPU cliCpu = new CPU(5);
         BlockedQueue cliBlockedQueue = new BlockedQueue();
-        CommandInterpreter interpreter = new CommandInterpreter(cliReadyQueue, cliCpu, cliBlockedQueue);
+        CPU cliCpu = new CPU(5);
+        SRTScheduler cliScheduler = new SRTScheduler();
+        IOManager cliIoManager = new IOManager();
 
-        System.out.println(interpreter.execute("create test1"));
-        System.out.println(interpreter.execute("write test1 LOAD 7\nADD 3\nPRINT\nHALT"));
-        System.out.println(interpreter.execute("run test1"));
+        OSKernel kernel = new OSKernel(cliReadyQueue, cliBlockedQueue, cliCpu,
+                cliScheduler, cliMemoryManager, cliFileSystem, cliIoManager);
+        CommandInterpreter interpreter = new CommandInterpreter(kernel);
+
+        // pokrece pozadinsku nit koja sama, kontinuirano poziva tick()  od
+        // sada createProcess/run odmah vracaju kontrolu, izvrsavanje ide paralelno
+        kernel.start();
+
+        System.out.println(interpreter.execute("create /test1"));
+        System.out.println(interpreter.execute("write /test1 LOAD 7\nADD 3\nPRINT\nHALT"));
+        System.out.println(interpreter.execute("run /test1"));
+
+        // dajemo pozadinskoj niti vremena da izvrsi proces (LOAD/ADD/PRINT/HALT)
+        // prije nego sto provjerimo stanje preko ps
+        try {
+            Thread.sleep(500);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+
         System.out.println(interpreter.execute("ps"));
-        System.out.println(interpreter.execute("block 1"));
-        System.out.println(interpreter.execute("ps"));
-        System.out.println(interpreter.execute("unblock 1"));
-        System.out.println(interpreter.execute("ps"));
+
+        kernel.stop();
+
+        // demo test za MemoryManager
+        System.out.println();
+        System.out.println("Demo test za MemoryManager");
+
+        RAM ram = new RAM(64);
+        MemoryManager memoryManager = new MemoryManager(ram);
+
+        PCB memProcess = new PCB(9, ProcessState.READY, 0, 0,
+                new HashMap<>(), 0, 0, new ArrayList<>(), 0);
+
+        boolean allocated = memoryManager.allocate(memProcess, 10);
+        System.out.println("Alokacija uspjela: " + allocated);
+        System.out.println("baseAddress=" + memProcess.getBaseAddress()
+                + ", limit=" + memProcess.getLimit());
+
+        memoryManager.write(memProcess, 2, 42);
+        int readValue = memoryManager.read(memProcess, 2);
+        System.out.println("Procitana vrijednost na adresi 2: " + readValue);
+
+        try {
+            memoryManager.write(memProcess, 999, 1);
+            System.out.println("Test NIJE PROŠAO: očekivana je greška, a nije bačena.");
+        } catch (IllegalArgumentException e) {
+            System.out.println("Test PROŠAO, uhvaćena očekivana greška: " + e.getMessage());
+        }
+
+        memoryManager.free(memProcess);
+        System.out.println("Memorija procesa pid=" + memProcess.getPid() + " je oslobođena.");
     }
 }
