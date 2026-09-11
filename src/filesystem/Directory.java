@@ -1,6 +1,7 @@
 package filesystem;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -9,6 +10,7 @@ public class Directory extends FsNode{
 
     public Directory(String name, Directory parent) {
         super(name, parent);
+        this.children = new HashMap<>();
     }
 
     public void addChild(FsNode node){
