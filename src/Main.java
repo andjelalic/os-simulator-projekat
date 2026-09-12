@@ -5,6 +5,9 @@ import filesystem.Directory;
 import filesystem.FileSystem;
 import io.DiskDevice;
 import io.IOManager;
+import io.IOOperation;
+import io.IORequest;
+import io.IOType;
 import kernel.OSKernel;
 import memory.MemoryManager;
 import memory.RAM;
@@ -20,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Scanner;
 
 public class Main {
     public static void main(String[] args) {
@@ -208,6 +212,170 @@ public class Main {
         // kompletan test Scenarija 1 potpuno nezavisan setp
         System.out.println();
         runScenario1();
+
+        //  C-SCAN rasporedjivanje diska i rucno block/unblock
+        System.out.println();
+        runScenario2();
+
+
+        runInteractiveConsole();
+    }
+
+
+    // prvo pokazem da DiskDevice opsluzuje IORequest-ove po
+    // pozciji (rastuce od trenutne pozicije glave), a ne po redoslijedu
+    // kojim su stigli u red
+    // onda prikazem da blokiran proces (block komanda) ne napreduje dok
+    // ne bude odblokiran , iako pozadinska nit kontinuirano radi tick()
+    private static void runScenario2() {
+        System.out.println("=== SCENARIO 2 ===");
+
+        // c scan rasporedjivanje diska
+        System.out.println("======C-SCAN raspoređivanje diska ===");
+
+        DiskDevice disk = new DiskDevice("disk1", 200);
+
+        //sam sadrzaj procesa nije bitan za prikaz rasporedjivanja
+        PCB dummyPcb = PCB.createSystemProcess(999, 1);
+        IOOperation dummyOp = new IOOperation(IOType.READ, 1); // READ ne smije imati data
+
+        IORequest r1 = new IORequest(dummyPcb, dummyOp, disk, 50);
+        IORequest r2 = new IORequest(dummyPcb, dummyOp, disk, 20);
+        IORequest r3 = new IORequest(dummyPcb, dummyOp, disk, 90);
+        IORequest r4 = new IORequest(dummyPcb, dummyOp, disk, 10);
+        IORequest r5 = new IORequest(dummyPcb, dummyOp, disk, 60);
+
+        disk.addRequest(r1);
+        disk.addRequest(r2);
+        disk.addRequest(r3);
+        disk.addRequest(r4);
+        disk.addRequest(r5);
+
+        for (int i = 0; i < 5; i++) {
+            IORequest next = disk.getNextRequest();
+            System.out.println("Sljedeci zahtjev, pozicija=" + next.getPosition());
+        }
+
+        System.out.println("C-SCAN redoslijed pokazuje da glava diska ide u JEDNOM smjeru " +
+                "(rastuce od trenutne pozicije), opsluzujuci zahtjeve po udaljenosti, ne po " +
+                "redoslijedu dolaska - ocekivano: 10, 20, 50, 60, 90");
+
+        // ===== Rucno blokiranje procesa =====
+        System.out.println();
+        System.out.println("=== Dio B: Ručno blokiranje procesa ===");
+
+        RAM ram = new RAM(128);
+        MemoryManager memoryManager = new MemoryManager(ram);
+        Directory root = new Directory("", null);
+        DiskDevice disk2 = new DiskDevice("disk2", 128);
+        FileSystem fileSystem = new FileSystem(root, disk2);
+        ReadyQueue readyQueue = new ReadyQueue();
+        BlockedQueue blockedQueue = new BlockedQueue();
+        CPU cpu = new CPU(5);
+        SRTScheduler scheduler = new SRTScheduler();
+        IOManager ioManager = new IOManager();
+
+        OSKernel kernel = new OSKernel(readyQueue, blockedQueue, cpu,
+                scheduler, memoryManager, fileSystem, ioManager);
+        CommandInterpreter interpreter = new CommandInterpreter(kernel);
+
+        kernel.start();
+
+        System.out.println(interpreter.execute("create /block_test.asm"));
+        System.out.println(interpreter.execute(
+                "write /block_test.asm LOAD 1\nADD 1\nADD 1\nADD 1\nADD 1\nADD 1\nADD 1\nADD 1\nPRINT\nHALT"));
+
+        String runResult = interpreter.execute("run /block_test.asm");
+        System.out.println(runResult);
+
+
+        int pid = Integer.parseInt(runResult.substring(runResult.indexOf("pid=") + 4).trim());
+
+        // blokiramo proces odmah nakon sto je kreiran, prije nego sto stigne
+        // da zavrsi (pozadinska nit tek kreće da ga izvrsava)
+        System.out.println(interpreter.execute("block " + pid));
+        System.out.println(interpreter.execute("ps"));
+
+        try {
+            Thread.sleep(400);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+
+        System.out.println(interpreter.execute("ps"));
+        System.out.println("Proces je i dalje WAITING iako je proslo dovoljno vremena da zavrsi " +
+                "- dokaz da blokiran proces ne napreduje");
+
+        System.out.println(interpreter.execute("unblock " + pid));
+
+        // 700ms umjesto 400ms, program ima 10 instrukcija, a pozadinska nit
+        // izvrsava po jedan korak svakih 50ms (500ms samo za izvrsavanje),
+        // pa je potrebna veca margina da proces sigurno stigne do terminayed
+        try {
+            Thread.sleep(700);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+
+        System.out.println(interpreter.execute("ps"));
+
+        kernel.stop();
+    }
+
+
+    private static void runInteractiveConsole() {
+        RAM ram = new RAM(128);
+        MemoryManager memoryManager = new MemoryManager(ram);
+        Directory root = new Directory("", null);
+        DiskDevice disk = new DiskDevice("disk0", 128);
+        FileSystem fileSystem = new FileSystem(root, disk);
+        ReadyQueue readyQueue = new ReadyQueue();
+        BlockedQueue blockedQueue = new BlockedQueue();
+        CPU cpu = new CPU(5);
+        SRTScheduler scheduler = new SRTScheduler();
+        IOManager ioManager = new IOManager();
+
+        OSKernel kernel = new OSKernel(readyQueue, blockedQueue, cpu,
+                scheduler, memoryManager, fileSystem, ioManager);
+        CommandInterpreter interpreter = new CommandInterpreter(kernel);
+
+        System.out.println("=== Interaktivna konzola OS simulacije ===");
+        System.out.println("Dostupne komande: create <path>, mkdir <path>, write <path> <kod>, cat <path>, run <path>,");
+        System.out.println(" ps, block <pid>, unblock <pid>, exit");
+        System.out.println();
+
+        // boot sistemskih procesa prije bilo cega drugog, ps odmah nakon
+        // pokazuje da su tu od starta
+        kernel.bootSystemProcesses();
+        System.out.println(kernel.listProcesses());
+
+        // pokrecemo pozadinsku nit koja stalono poziva tick(),
+        // izvrsavanje korisnickih komandi (run, block, unblock iyd)
+        //  procesi se izvrsavaju paralelno
+        kernel.start();
+
+        Scanner scanner = new Scanner(System.in);
+        while (true) {
+            System.out.print("> ");
+            String line = scanner.nextLine();
+            String trimmed = line.trim();
+
+            if (trimmed.equalsIgnoreCase("exit")) {
+                kernel.stop();
+                System.out.println("Gasim sistem...");
+                break;
+            }
+
+            if (trimmed.isEmpty()) {
+                continue;
+            }
+
+            if (trimmed.startsWith("write ")) {
+                trimmed = trimmed.replace("\\n", "\n");
+            }
+
+            System.out.println(interpreter.execute(trimmed));
+        }
     }
 
     // test Scenarija 1  boot sistemskih procesa, kreiranje
