@@ -7,13 +7,13 @@ public class IOOperation {
 
     public IOOperation(IOType type, String data, int duration){
         if(type.equals(IOType.WRITE) && (data == null || data.isEmpty())){
-            throw new IllegalArgumentException("No data provided to write.");
+            throw new IllegalArgumentException("Nema podataka za upis.");
         }
         if(type.equals(IOType.READ) && (data != null)){
-            throw new IllegalArgumentException("Too many arguments for the read operation.");
+            throw new IllegalArgumentException("Previše argumenata za operaciju čitanja.");
         }
         if(duration <= 0){
-            throw new IllegalArgumentException("An operation must be at least one time unit long.");
+            throw new IllegalArgumentException("Operacija treba da traje barem jednu vremensku jedinicu.");
         }
 
         this.type = type;
