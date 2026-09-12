@@ -158,7 +158,8 @@ public class OSKernel {
             PCB p = allProcesses.get(i);
             sb.append("pid=").append(p.getPid())
                     .append(", state=").append(p.getState())
-                    .append(", remainingTime=").append(p.getRemainingTime());
+                    .append(", remainingTime=").append(p.getRemainingTime())
+                    .append(", system=").append(p.isSystemProcess());
             if (i < allProcesses.size() - 1) {
                 sb.append("\n");
             }
@@ -166,13 +167,17 @@ public class OSKernel {
         return sb.toString();
     }
 
-    // blokira proces sa datim pid-om (prebacuje ga u blockedQueue, stanje WAITING)
+    // blokira proces sa datim pid ,prebacuje ga u blockedQueue stanje waiting
+    // proces se mora ukloniti i iz readyQueua jer SRTScheduler.chooseNext
+    // bira direktno iz readyQueaa bez provjere statea ,da sam ga ostavila
+    // tamo, i dalje bi mogao biti izabran i izvrsavan iako je "blokiran"
     public String blockProcess(int pid) {
         PCB pcb = findByPid(pid);
         if (pcb == null) {
             return "Greska: proces sa pid=" + pid + " ne postoji";
         }
 
+        readyQueue.remove(pcb);
         blockedQueue.block(pcb);
         return "Proces pid=" + pid + " blokiran";
     }
