@@ -31,7 +31,7 @@ public class IOManager {
             }
         }
         if(device == null)
-            throw new IllegalArgumentException("Device '" + deviceName + "' does not exist.");
+            throw new IllegalArgumentException("Uređaj '" + deviceName + "' ne postoji.");
 
         IORequest request = new IORequest(p,op, device);
         p.setState(ProcessState.WAITING);

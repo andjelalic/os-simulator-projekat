@@ -68,7 +68,7 @@ public class DiskDevice extends IODevice{
             }
         }
 
-        throw new IllegalStateException("Not enough contiguous free space.");
+        throw new IllegalStateException("Nedovoljno slobodnog prostora.");
     }
 
     public void free(int start, int blockCount) {

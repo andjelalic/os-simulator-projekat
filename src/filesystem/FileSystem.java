@@ -57,7 +57,7 @@ public class FileSystem {
 
         if (!(node instanceof File file)) {
             throw new IllegalArgumentException(
-                    "Path does not point to a file"
+                    "Putanja ne pokazuje na datoteku"
             );
         }
 
@@ -80,7 +80,7 @@ public class FileSystem {
         for (String segment : segments) {
             if (!(current instanceof Directory directory)) {
                 throw new IllegalArgumentException(
-                        current.getName() + " is not a directory"
+                        current.getName() + " nije direktorijum"
                 );
             }
 
@@ -88,7 +88,7 @@ public class FileSystem {
 
             if (child == null) {
                 throw new IllegalArgumentException(
-                        "No such file or directory: " + segment
+                        "Ne postoji takva datoteka ili direktorijum: " + segment
                 );
             }
 
@@ -106,11 +106,11 @@ public class FileSystem {
             FsNode node = parent.getChild(segments[i]);
 
             if(node == null){
-                throw new IllegalArgumentException("there is no directory named " + segments[i] + " in the " + parent.getName() + " directory");
+                throw new IllegalArgumentException("Ne postoji direktorijum imena " + segments[i] + " unutar " + parent.getName() + " direktorijuma");
             }
 
             if(!(node instanceof Directory)){
-                throw new IllegalArgumentException(node.getName() + " is not a directory");
+                throw new IllegalArgumentException(node.getName() + " nije direktorijum");
             }
 
             parent = (Directory) node;
@@ -122,7 +122,7 @@ public class FileSystem {
         FsNode node = resolve(path);
 
         if (node == root) {
-            throw new IllegalArgumentException("Cannot delete root");
+            throw new IllegalArgumentException("Nemoguće obrisati root");
         }
 
         deleteRecursively(node);
@@ -131,8 +131,12 @@ public class FileSystem {
     }
 
     private void deleteRecursively(FsNode node) {
-        if (node instanceof File) {
-            // ovde treba da se oslobodi prostor na disku, što još nisam implementirala
+        if (node instanceof File file) {
+
+            if (file.getSize() > 0) {
+                disk.free(file.getStartBlock(), file.getSize());
+            }
+
             return;
         }
 

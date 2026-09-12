@@ -25,6 +25,18 @@ public class File extends FsNode{
         content.append(data);
     }
 
+    public String getContent() {
+        return content.toString();
+    }
+
+    public int getStartBlock() {
+        return startBlock;
+    }
+
+    public int getSize() {
+        return size;
+    }
+
     @Override
     public String getPath() {
         return this.parent.getPath() + "/" + name;
